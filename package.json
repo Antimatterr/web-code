@@ -4,9 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run copy-wasm && vite",
-    "build": "npm run copy-wasm && tsc -b && vite build",
-    "copy-wasm": "cp node_modules/esbuild-wasm/esbuild.wasm public/esbuild.wasm",
+    "dev": " vite",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
