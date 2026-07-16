@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { esbuildService } from "../services/esbuildService";
 
 interface TranspilerState {
@@ -14,31 +14,39 @@ export function useTranspiler(code: string, debounceMs = 300) {
     isCompiling: false,
   });
 
-  const timeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (timeRef.current) {
-      clearTimeout(timeRef.current);
-    }
-    if (!code.trim()) {
-      return;
-    }
+    let isCancelled = false;
 
-    setState((prev) => ({ ...prev, isCompiling: true, error: null }));
+    const timerId = setTimeout(async () => {
+      if (!code.trim()) {
+        if (!isCancelled) {
+          setState({ output: "", error: null, isCompiling: false });
+        }
+        return;
+      }
 
-    timeRef.current = setTimeout(async () => {
+      if (!isCancelled) {
+        setState((prev) => ({ ...prev, isCompiling: true, error: null }));
+      }
+
       try {
         const output = await esbuildService.transpile(code);
-        setState({ output, error: null, isCompiling: false });
+        if (!isCancelled) {
+          setState({ output, error: null, isCompiling: false });
+        }
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Transpile failed";
-        setState({ output: "", error: message, isCompiling: false });
+        if (!isCancelled) {
+          const message = err instanceof Error ? err.message : "Transpile failed";
+          setState({ output: "", error: message, isCompiling: false });
+        }
       }
     }, debounceMs);
+
     return () => {
-      if (timeRef.current) {
-        clearTimeout(timeRef.current);
-      }
+      clearTimeout(timerId);
+      isCancelled = true;
     };
   }, [code, debounceMs]);
+
   return state;
 }

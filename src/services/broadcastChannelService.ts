@@ -16,6 +16,11 @@ class BroadcastService {
       const msg = e.data;
 
       if (msg.type === "REQUEST_BUNDLE" && this.lastBundle) {
+        // Send the last bundle when requested
+        this.channel.postMessage({
+          type: "UPDATE_BUNDLE",
+          bundle: this.lastBundle,
+        } satisfies BroadcastMessage);
         return;
       }
 
