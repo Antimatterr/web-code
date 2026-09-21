@@ -1,4 +1,8 @@
 export function buildIframeDoc(compiledJS: string): string {
+  // JSON.stringify yields a valid JS string literal for any input; escaping
+  // "<" additionally prevents "</script>" inside user code from closing the
+  // host <script> element early.
+  const codeLiteral = JSON.stringify(compiledJS).replace(/</g, "\\u003c");
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -36,7 +40,8 @@ export function buildIframeDoc(compiledJS: string): string {
 
       try {
         // Dynamically import the compiled user code as an ES module
-        const dataURL = 'data:text/javascript;charset=utf-8,' + encodeURIComponent(\`${compiledJS.replace(/`/g, '\\`')}\`);
+        const code = ${codeLiteral};
+        const dataURL = 'data:text/javascript;charset=utf-8,' + encodeURIComponent(code);
         const mod = await import(dataURL);
 
         // Mount default export as root React component

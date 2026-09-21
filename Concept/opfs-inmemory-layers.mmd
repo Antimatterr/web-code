@@ -1,0 +1,33 @@
+flowchart TB
+    %% OPFS (async, at-rest) vs In-memory + Monaco (sync, live) — two-layer architecture
+    subgraph UI["UI Layer (sync)"]
+        tree["File tree / Tabs"]
+        editor["Monaco editor<br/>(needs data NOW, no await)"]
+    end
+
+    subgraph MEM["In-memory Layer (sync, live working copy)"]
+        store["FS store<br/>Map&lt;path, content&gt;<br/>+ Monaco models"]
+    end
+
+    subgraph PKG["opfs-fs package (async)"]
+        api["Async API<br/>readFile / writeFile / readdir ..."]
+    end
+
+    subgraph DISK["OPFS (async, durable, per-origin)"]
+        opfs["navigator.storage<br/>.getDirectory()"]
+    end
+
+    editor -- "keystroke (sync)" --> store
+    tree -- "read (sync)" --> store
+    store -- "render (sync)" --> editor
+
+    store -. "debounced write-through (await)" .-> api
+    api -- "createWritable() (await)" --> opfs
+
+    opfs -- "on startup: load tree (await)" --> api
+    api -. "hydrate models" .-> store
+
+    classDef sync fill:#0e7490,stroke:#083344,color:#fff;
+    classDef async fill:#7c2d12,stroke:#431407,color:#fff;
+    class UI,MEM sync;
+    class PKG,DISK async;

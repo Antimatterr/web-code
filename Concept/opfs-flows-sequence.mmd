@@ -1,0 +1,23 @@
+sequenceDiagram
+    %% Three flows: startup load, live edit, background save
+    participant U as User
+    participant M as Monaco (sync)
+    participant S as In-memory store (sync)
+    participant F as opfs-fs (async)
+    participant O as OPFS (async)
+
+    Note over U,O: 1. Startup — hydrate from disk
+    F->>O: await readdir / readFile (whole tree)
+    O-->>F: file contents
+    F->>S: build Map + create Monaco models
+    S->>M: show active file
+
+    Note over U,O: 2. Live editing — all synchronous, no await
+    U->>M: type a keystroke
+    M->>S: update in-memory content (instant)
+    S->>M: re-render (instant)
+
+    Note over U,O: 3. Background save — debounced write-through
+    S-->>F: after ~400ms idle: writeFile(path, content)
+    F->>O: await createWritable().write()
+    O-->>F: done (durable)
