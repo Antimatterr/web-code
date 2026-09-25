@@ -1,0 +1,21 @@
+%% Two browser tabs, one set of files on disk.
+%% Without this, both tabs would fight and the project would corrupt.
+sequenceDiagram
+    participant T1 as Tab 1
+    participant L as Web Locks API
+    participant DISK as OPFS
+    participant T2 as Tab 2
+
+    T1->>L: request lock "project-writer", ifAvailable
+    L-->>T1: granted
+    Note over T1: holds the lock by never resolving<br/>its callback, so the lock lasts<br/>as long as the tab lives
+    T1->>DISK: hydrate, then write freely
+
+    T2->>L: request the same lock, ifAvailable
+    L-->>T2: null, someone else has it
+    Note over T2: opens read-only:<br/>still loads and displays the project,<br/>editing controls hidden,<br/>banner explains why
+    T2->>DISK: read only
+
+    T1->>T1: tab closed
+    L-->>L: lock released automatically
+    Note over T2: reload now promotes Tab 2 to writer

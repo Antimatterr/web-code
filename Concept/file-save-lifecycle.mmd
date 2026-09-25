@@ -1,0 +1,29 @@
+%% The life of a single file's unsaved changes.
+%% "Dirty" means memory and disk disagree.
+stateDiagram-v2
+    [*] --> Clean: loaded from disk on startup
+
+    Clean --> Dirty: you type
+    note right of Dirty
+        Tab shows a dot.
+        A 400 ms timer starts.
+        Typing again resets the timer,
+        so we write once per pause,
+        not once per keystroke.
+    end note
+
+    Dirty --> Queued: timer fires, or you press Cmd+S
+    note right of Queued
+        Every disk operation joins one
+        promise chain, so writes, renames
+        and deletes reach the disk in the
+        same order you made them.
+    end note
+
+    Queued --> Writing: worker takes a sync access handle
+    Writing --> Clean: write succeeded AND the content<br/>on disk still matches memory
+    Writing --> Dirty: you typed again while it was writing
+    Writing --> Failed: disk error
+
+    Failed --> Queued: next edit retries
+    Dirty --> [*]: file deleted, pending write cancelled

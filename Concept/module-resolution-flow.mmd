@@ -1,0 +1,29 @@
+%% How one import statement becomes one file.
+%% This is the part a bundler spends most of its life doing.
+flowchart TB
+    START["esbuild asks:<br/>resolve './utils/math'<br/>imported by '/src/App.tsx'"]
+    BARE{"Does it start with<br/>. or .. or / ?"}
+    EXT["Mark external.<br/>Stays an import in the output.<br/>The iframe import map<br/>fetches it from esm.sh."]
+    JOIN["Join with the importer's folder<br/>then clean up . and ..<br/>'/src' + './utils/math'<br/>= '/src/utils/math'"]
+    PROBE["Build the candidate list, in priority order"]
+    C1["1. exact: /src/utils/math"]
+    C2["2. add extensions:<br/>.tsx .ts .jsx .js .json"]
+    C3["3. treat as folder:<br/>/src/utils/math/index.tsx<br/>and the other extensions"]
+    LOOK{"First candidate<br/>that exists in the<br/>file map?"}
+    FOUND["Return that path.<br/>esbuild then asks us<br/>to load its contents."]
+    FAIL["Return an error listing<br/>every path we tried,<br/>with the importer's name"]
+
+    START --> BARE
+    BARE -- "no, it is a package like 'react'" --> EXT
+    BARE -- "yes, it is a local file" --> JOIN
+    JOIN --> PROBE
+    PROBE --> C1 --> C2 --> C3 --> LOOK
+    LOOK -- "yes" --> FOUND
+    LOOK -- "none of them" --> FAIL
+
+    classDef good fill:#14532d,stroke:#052e16,color:#fff;
+    classDef bad fill:#7f1d1d,stroke:#450a0a,color:#fff;
+    classDef neutral fill:#3f3f46,stroke:#18181b,color:#fff;
+    class FOUND,EXT good;
+    class FAIL bad;
+    class C1,C2,C3 neutral;

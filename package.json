@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@vercel/analytics": "^2.0.1",
     "esbuild-wasm": "^0.27.3",
     "monaco-editor": "^0.52.2",
     "react": "^19.2.0",

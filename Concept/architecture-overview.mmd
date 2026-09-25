@@ -1,0 +1,50 @@
+%% Web Code — what runs where.
+%% Each dashed box is a separate JavaScript thread or a separate sandbox.
+flowchart TB
+    subgraph MAIN["Main thread — the only place that can draw pixels"]
+        direction TB
+        UI["React UI<br/>file tree, tabs, status bar"]
+        MON["Monaco editor<br/>one model per file"]
+        STORE["FileStore<br/>Map of path to content<br/>synchronous, always instant"]
+        UI <--> STORE
+        MON <--> STORE
+    end
+
+    subgraph W1["Worker 1 — bundler"]
+        ESB["esbuild compiled to WebAssembly"]
+        PLUG["vfsPlugin<br/>answers 'where does this import live?'"]
+        ESB <--> PLUG
+    end
+
+    subgraph W2["Worker 2 — storage"]
+        OPFSW["Sync access handles<br/>read and write real files"]
+    end
+
+    subgraph W3["Workers 3+ — Monaco language services"]
+        TSW["TypeScript worker<br/>red squiggles, autocomplete"]
+    end
+
+    subgraph SANDBOX["Sandboxed iframe — untrusted user code"]
+        IFR["The user's app running for real"]
+    end
+
+    DISK[("Origin Private File System<br/>survives refresh")]
+    CDN[("esm.sh<br/>react, react-dom")]
+
+    STORE -- "snapshot of every file" --> ESB
+    ESB -- "one bundled JS string, or errors with file and line" --> STORE
+    STORE -- "debounced write-through" --> OPFSW
+    OPFSW <--> DISK
+    DISK -- "hydrate on startup" --> STORE
+    MON <--> TSW
+    STORE -- "bundle injected as srcDoc" --> IFR
+    IFR -- "bare imports resolved at runtime" --> CDN
+
+    classDef main fill:#0e7490,stroke:#083344,color:#fff;
+    classDef worker fill:#7c2d12,stroke:#431407,color:#fff;
+    classDef danger fill:#7f1d1d,stroke:#450a0a,color:#fff;
+    classDef store fill:#3f3f46,stroke:#18181b,color:#fff;
+    class MAIN main;
+    class W1,W2,W3 worker;
+    class SANDBOX danger;
+    class DISK,CDN store;

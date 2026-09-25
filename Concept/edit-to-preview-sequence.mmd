@@ -1,0 +1,33 @@
+%% What happens between pressing a key and seeing the result.
+%% Note which arrows are instant and which are allowed to be slow.
+sequenceDiagram
+    autonumber
+    actor U as You
+    participant M as Monaco
+    participant S as FileStore
+    participant R as React
+    participant B as Bundler worker
+    participant I as Preview iframe
+    participant D as OPFS worker
+
+    U->>M: press a key
+    M->>S: updateFile path, newText
+    Note over S: synchronous, no await<br/>version counter increments
+
+    S->>R: notify subscribers
+    R->>R: re-render, typing feels instant
+
+    par Build path, debounced 300 ms
+        R->>B: postMessage entry plus snapshot of all files
+        Note over B: generation N recorded
+        B->>B: esbuild walks imports<br/>vfsPlugin serves each file
+        B-->>R: bundled JS, or errors with file, line, column
+        Note over R: results from an older generation<br/>are dropped, never rendered
+        R->>I: new srcDoc, iframe remounts
+        I-->>U: updated app appears
+    and Save path, debounced 400 ms
+        S->>D: writeFile path, content
+        D->>D: sync access handle, truncate, write, flush
+        D-->>S: markSaved
+        Note over S: dot on the tab disappears
+    end
