@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Editor from "./components/Editor";
 import Preview from "./components/Preview";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 const router = createBrowserRouter([
   { path: "/", element: <Editor /> },
@@ -13,6 +14,7 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Analytics/>
+    <SpeedInsights/>
     <RouterProvider router={router} />
   </StrictMode>,
 );
